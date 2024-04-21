@@ -60,13 +60,11 @@ while CURRENT_YEAR >= END_YEAR:
             # Get the description
             subtitle_tag = drug.find('p', class_='drug-subtitle')
             description_tag = subtitle_tag.find_next_sibling('p', class_=False)
-            description = (description_tag or None) and description_tag.get_text(strip=True)
-            new_data["description"] = description
+            new_data["description"] = (description_tag or None) and description_tag.get_text(strip=True)
 
             # Iterate through headers to extract key data from <b> tags, which uniquely contain
             # the metadata like approval date, company name, and treatment information
-            metadata_headers = ['Date of Approval:', 'Company:', 'Treatment for:']
-            for header in metadata_headers:
+            for header in ['Date of Approval:', 'Company:', 'Treatment for:']:
                 header_tag = drug.find('b', string=header)
                 if header_tag:
                     value = header_tag.next_sibling.strip()

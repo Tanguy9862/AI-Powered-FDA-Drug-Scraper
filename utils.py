@@ -34,8 +34,7 @@ def extract_generic_and_admin(drug_tag: str) -> tuple:
     match = re.search(r'\(((?:[^\(\)]|\([^\)]*\))*)\)\s*(.*)', drug_tag)
 
     if match:
-        generic_name = match.group(1).strip()
-        mode_administration = match.group(2).strip()
+        generic_name, mode_administration = match.group(1).strip(), match.group(2).strip()
 
         # Handle empty parentheses case
         if not generic_name:

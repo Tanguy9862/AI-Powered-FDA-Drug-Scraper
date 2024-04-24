@@ -8,11 +8,20 @@ import requests
 from tqdm import tqdm
 
 from utils import extract_generic_and_admin, clean_company_name
+from classification import (
+    make_classification,
+    DRUG_CATEGORIES,
+    DRUG_DESCRIPTION,
+    DRUG_CLASSIFICATION_TEMPLATE,
+    DISEASE_CATEGORIES,
+    DISEASE_DESCRIPTION,
+    DISEASE_CLASSIFICATION_TEMPLATE
+)
 
 # Initialize constants: current and end years for scraping, date format, and browser headers
 CURRENT_YEAR, END_YEAR = int(datetime.utcnow().year), 2002
 DATE_FORMAT = '%B %d, %Y'
-headers = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0"}
 logging.basicConfig(level=logging.INFO)
 
 # Check for existing CSV file to determine if we need to update or initialize data
@@ -36,7 +45,7 @@ while CURRENT_YEAR >= END_YEAR:
     if not has_to_stop:
 
         logging.info(f'Scraping new drug approvals for {CURRENT_YEAR}')
-        response = requests.get(f'https://www.drugs.com/newdrugs-archive/{CURRENT_YEAR}.html', headers=headers)
+        response = requests.get(f'https://www.drugs.com/newdrugs-archive/{CURRENT_YEAR}.html', headers=HEADERS)
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Retrieve all drug blocks contained within the main 'ddc-media-list' div
@@ -49,8 +58,8 @@ while CURRENT_YEAR >= END_YEAR:
             drug_tag = drug.find('h3', class_='ddc-media-title')
 
             # Get the drug name
-            drug_name = drug_tag.find('a').text if drug_tag.find('a') else drug_tag.text.split('(')[0]
-            new_data['drug_name'] = drug_name
+            new_data['drug_name'] = drug_tag.find('a').text if drug_tag.find('a') else drug_tag.text.split('(')[0]
+            logging.info(f'Scraping data for {new_data.get("drug_name", None)}')
 
             # Get the generic name and the mode of administration
             generic_name, mode_administration = extract_generic_and_admin(str(drug_tag))
@@ -75,7 +84,7 @@ while CURRENT_YEAR >= END_YEAR:
 
                         # If the current drug and its approval date match the most recently recorded drug and date,
                         # it indicates there are no new updates to scrape, and the process should stop.
-                        if drug_name == most_recent_drug and date_formatted == most_recent_date:
+                        if new_data['drug_name'] == most_recent_drug and date_formatted == most_recent_date:
                             logging.info(f'{most_recent_drug} was the last drug scraped previously.\n'
                                          f'Scraping has now been completed.')
                             has_to_stop = True
@@ -86,6 +95,26 @@ while CURRENT_YEAR >= END_YEAR:
 
             if has_to_stop:
                 break
+
+            # Perform drug classification
+            new_data['drug_type'] = make_classification(
+                categories=DRUG_CATEGORIES,
+                item_description=DRUG_DESCRIPTION,
+                template=DRUG_CLASSIFICATION_TEMPLATE,
+                drug_name=new_data.get('drug_name', None),
+                mode_administration=new_data.get('mode_administration', None),
+                drug_description=new_data.get('description', None),
+                drug_treatment=new_data.get('Treatment for', None),
+            )
+
+            # Perform disease classification
+            new_data['disease_type'] = make_classification(
+                categories=DISEASE_CATEGORIES,
+                item_description=DISEASE_DESCRIPTION,
+                template=DISEASE_CLASSIFICATION_TEMPLATE,
+                drug_name=new_data.get('drug_name', None),
+                drug_treatment=new_data.get('Treatment for', None)
+            )
 
             # Append new scraped data to the existing CSV
             drug_df = pd.DataFrame([new_data])

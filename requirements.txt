@@ -1,3 +1,9 @@
 beautifulsoup4==4.12.3
-requests
-tqdm
+requests~=2.31.0
+tqdm~=4.66.2
+pandas~=2.2.2
+langchain~=0.1.16
+openai
+plotly~=5.21.0
+python-dotenv~=1.0.1
+langchain-openai

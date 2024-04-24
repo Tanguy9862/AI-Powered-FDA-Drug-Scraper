@@ -75,8 +75,4 @@ def clean_company_name(company_name: str) -> str:
     for suffix in suffixes_to_remove:
         company_name = re.sub(suffix, "", company_name).strip()
 
-    return company_name
-
-
-
-
+    return company_name.title()

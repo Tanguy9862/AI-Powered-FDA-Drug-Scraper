@@ -18,11 +18,5 @@ setup(
         'openai',
         'python-dotenv~=1.0.1',
         'langchain-openai'
-    ],
-    python_requires='>=3.7',
-    entry_points={
-        'console_scripts': [
-            'scrape-drugs=new_drug_approvals.main:scrape_new_drug_approvals_data'
-        ],
-    },
+    ]
 )

@@ -7,8 +7,8 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-from .utils import extract_generic_and_admin, clean_company_name
-from .classification import (
+from new_drug_approvals_scraper.utils import extract_generic_and_admin, clean_company_name
+from new_drug_approvals_scraper.classification import (
     make_classification,
     DRUG_CATEGORIES,
     DRUG_DESCRIPTION,

@@ -22,7 +22,7 @@ from classification import (
 CURRENT_YEAR, END_YEAR = int(datetime.utcnow().year), 2002
 DATE_FORMAT = '%B %d, %Y'
 HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0"}
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Check for existing CSV file to determine if we need to update or initialize data
 csv_file = 'new_drug_approvals.csv'
@@ -44,7 +44,7 @@ while CURRENT_YEAR >= END_YEAR:
 
     if not has_to_stop:
 
-        logging.info(f'Scraping new drug approvals for {CURRENT_YEAR}')
+        logging.info(f'[YEAR] Scraping new drug approvals for {CURRENT_YEAR}')
         response = requests.get(f'https://www.drugs.com/newdrugs-archive/{CURRENT_YEAR}.html', headers=HEADERS)
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -59,7 +59,7 @@ while CURRENT_YEAR >= END_YEAR:
 
             # Get the drug name
             new_data['drug_name'] = drug_tag.find('a').text if drug_tag.find('a') else drug_tag.text.split('(')[0]
-            logging.info(f'Scraping data for {new_data.get("drug_name", None)}')
+            logging.info(f'[DRUG] Scraping data for {new_data.get("drug_name", None)}')
 
             # Get the generic name and the mode of administration
             generic_name, mode_administration = extract_generic_and_admin(str(drug_tag))
@@ -69,14 +69,19 @@ while CURRENT_YEAR >= END_YEAR:
             # Get the description
             subtitle_tag = drug.find('p', class_='drug-subtitle')
             description_tag = subtitle_tag.find_next_sibling('p', class_=False)
-            new_data["description"] = (description_tag or None) and description_tag.get_text(strip=True)
+            description_text = description_tag.get_text(strip=True) if description_tag else ''
+            description_clean = description_text.replace(';', '').replace('\t', ' ')
+            new_data['description'] = description_clean
 
             # Iterate through headers to extract key data from <b> tags, which uniquely contain
             # the metadata like approval date, company name, and treatment information
             for header in ['Date of Approval:', 'Company:', 'Treatment for:']:
                 header_tag = drug.find('b', string=header)
+
                 if header_tag:
-                    value = header_tag.next_sibling.strip()
+                    # Clean the value by replacing semicolons with commas for 'Treatment for:', otherwise just strip
+                    # whitespace
+                    value = header_tag.next_sibling.strip().replace(';', ',') if header == 'Treatment for:' else header_tag.next_sibling.strip()
 
                     # Check if the current drug and its approval date match the most recently scraped drug and date:
                     if header == 'Date of Approval:':

@@ -49,14 +49,21 @@ def extract_generic_and_admin(drug_tag: str) -> tuple:
 
 def clean_company_name(company_name: str) -> str:
     """
-    Cleans the company name by removing specified suffixes and special characters.
+    Cleans and standardizes the company name by replacing certain conjunctions,
+    removing specified suffixes, and converting names to a standard abbreviation
+    if applicable. This helps in maintaining consistency in company names across the dataset.
+
 
     Args:
         company_name (str): The original company name.
 
     Returns:
-        str: The cleaned company name.
+       str: The standardized and cleaned company name.
     """
+
+    # Normalize the case, strip whitespace, and replace separators with 'and'
+    company_name = company_name.lower().strip()
+    company_name = re.sub(r'\s*(?:/|&|\+)\s*', ' and ', company_name)
 
     # List of suffixes to remove from the company name
     suffixes_to_remove = [
@@ -64,15 +71,19 @@ def clean_company_name(company_name: str) -> str:
         r'\bllc\b', r'\bcorp\b', r'\ba\/s\b', r'\bcorporation\b', r'\bs\.a\b',
         r'\bgmbh\b', r'\bag\b', r'\bplc\b', r'\band co\b', r'\band company\b',
         r'\bl\.p\b', r'& co', r'\bsa\b', r'\busa\b', r'\blp\b', r'\bus\b', r'\bincorporated\b',
-        r'\bpharma\b', r'\blaboratories\b'
+        r'\bpharma\b', r'\blaboratories\b', r'\bindustries\b', r'\bcompany\b'
     ]
-
-    company_name = company_name.lower()
 
     # Remove special characters such as periods and commas
     company_name = re.sub(r'[.,]', '', company_name)
 
     for suffix in suffixes_to_remove:
         company_name = re.sub(suffix, "", company_name).strip()
+
+    # Convert full names to standard abbreviations if applicable
+    standard_names = {
+        'glaxosmithkline': 'gsk'
+    }
+    company_name = standard_names.get(company_name, company_name)
 
     return company_name.title()

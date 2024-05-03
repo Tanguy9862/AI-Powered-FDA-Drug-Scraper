@@ -51,7 +51,7 @@ Categories: {categories}
 """
 
 # Initialize configuration for API access.
-load_dotenv()
+# load_dotenv()
 LLM_MODEL = "gpt-3.5-turbo"
 API_KEY = os.getenv('OPENAI_API_KEY')
 chat = ChatOpenAI(temperature=0.0, model=LLM_MODEL, openai_api_key=API_KEY)

@@ -1,4 +1,5 @@
 import re
+from langchain_openai import ChatOpenAI
 
 
 def clean_mode_administration(mode: str) -> str:
@@ -87,3 +88,9 @@ def clean_company_name(company_name: str) -> str:
     company_name = standard_names.get(company_name, company_name)
 
     return company_name.title()
+
+
+def initialize_model(api_key):
+    # Initialize configuration for API access.
+    llm_model = "gpt-3.5-turbo"
+    return ChatOpenAI(temperature=0.0, model=llm_model, openai_api_key=api_key)

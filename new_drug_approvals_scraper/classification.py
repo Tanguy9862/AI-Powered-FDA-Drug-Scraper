@@ -1,9 +1,5 @@
-import os
-
-from dotenv import load_dotenv
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 
 # Configuration for drug and disease categories
 DRUG_CATEGORIES = "Antibiotics, Antivirals, Antifungals, Antiparasitics, Antineoplastics, Anti-inflammatories, " \
@@ -50,12 +46,6 @@ Categories: {categories}
 {format_instructions}
 """
 
-# Initialize configuration for API access.
-# load_dotenv()
-LLM_MODEL = "gpt-3.5-turbo"
-API_KEY = os.getenv('OPENAI_API_KEY')
-chat = ChatOpenAI(temperature=0.0, model=LLM_MODEL, openai_api_key=API_KEY)
-
 
 def setup_classification_schema(description: str) -> ResponseSchema:
     """
@@ -70,7 +60,7 @@ def setup_classification_schema(description: str) -> ResponseSchema:
     return ResponseSchema(name="item_category", description=description)
 
 
-def make_classification(categories: str, item_description: str, template: str, **kwargs) -> str:
+def make_classification(categories: str, item_description: str, template: str, chat, **kwargs) -> str:
     """
     Classifies an item using LangChain model based on provided details.
 

@@ -7,7 +7,12 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-from new_drug_approvals_scraper.utils import extract_generic_and_admin, clean_company_name
+from new_drug_approvals_scraper.utils import (
+    initialize_model,
+    extract_generic_and_admin,
+    clean_company_name
+)
+
 from new_drug_approvals_scraper.classification import (
     make_classification,
     DRUG_CATEGORIES,
@@ -24,7 +29,7 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Geck
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def scrape_new_drug_approvals_data():
+def scrape_new_drug_approvals_data(api_key):
 
     # Check for existing CSV file to determine if we need to update or initialize data
     csv_file = 'new_drug_approvals.csv'
@@ -38,6 +43,9 @@ def scrape_new_drug_approvals_data():
         most_recent_date, most_recent_drug = most_recent['Date of Approval'], most_recent['drug_name']
     else:
         most_recent_date, most_recent_drug = None, None
+
+    # Initialize LLM
+    chat = initialize_model(api_key)
 
     # Initialize current_year and end_year
     current_year, end_year = int(datetime.utcnow().year), 2002
@@ -111,6 +119,7 @@ def scrape_new_drug_approvals_data():
                     categories=DRUG_CATEGORIES,
                     item_description=DRUG_DESCRIPTION,
                     template=DRUG_CLASSIFICATION_TEMPLATE,
+                    chat=chat,
                     drug_name=new_data.get('drug_name', None),
                     mode_administration=new_data.get('mode_administration', None),
                     drug_description=new_data.get('description', None),
@@ -121,6 +130,7 @@ def scrape_new_drug_approvals_data():
                 new_data['disease_type'] = make_classification(
                     categories=DISEASE_CATEGORIES,
                     item_description=DISEASE_DESCRIPTION,
+                    chat=chat,
                     template=DISEASE_CLASSIFICATION_TEMPLATE,
                     drug_name=new_data.get('drug_name', None),
                     drug_treatment=new_data.get('Treatment for', None)

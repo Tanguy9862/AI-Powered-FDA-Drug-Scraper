@@ -1,5 +1,7 @@
 import logging
 import os
+from dotenv import load_dotenv
+from typing import Optional
 
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -29,7 +31,23 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Geck
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def scrape_new_drug_approvals_data(api_key):
+def scrape_new_drug_approvals_data(openai_api_key: Optional[str] = None) -> None:
+    """
+    Scrapes new drug approvals data and updates the local database.
+
+    This function iteratively scrapes data for new drug approvals from a specified range of years,
+    classifies the drugs and diseases using a LangChain model, and updates a local CSV file with the data.
+
+    Args:
+        openai_api_key (Optional[str]): An OpenAI API key for using the language model. If not provided,
+                                     the function will attempt to load it from environment variables.
+
+    Raises:
+        ValueError: If the OpenAI API key is not provided and cannot be loaded from environment variables.
+
+    Returns:
+        None: The function logs messages and does not return any value.
+     """
 
     # Check for existing CSV file to determine if we need to update or initialize data
     csv_file = 'new_drug_approvals.csv'
@@ -44,8 +62,14 @@ def scrape_new_drug_approvals_data(api_key):
     else:
         most_recent_date, most_recent_drug = None, None
 
-    # Initialize LLM
-    chat = initialize_model(api_key)
+    # Initialize LLM for classification
+    if not openai_api_key:
+        load_dotenv()
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        if not openai_api_key:
+            raise ValueError('OpenAI API key not found. Please provide it as an argument or set it as an environment variable.')
+
+    chat = initialize_model(openai_api_key)
 
     # Initialize current_year and end_year
     current_year, end_year = int(datetime.utcnow().year), 2002

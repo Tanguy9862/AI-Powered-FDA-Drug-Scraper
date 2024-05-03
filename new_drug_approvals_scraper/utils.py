@@ -90,7 +90,15 @@ def clean_company_name(company_name: str) -> str:
     return company_name.title()
 
 
-def initialize_model(api_key):
-    # Initialize configuration for API access.
-    llm_model = "gpt-3.5-turbo"
-    return ChatOpenAI(temperature=0.0, model=llm_model, openai_api_key=api_key)
+def initialize_model(api_key: str) -> ChatOpenAI:
+    """
+    Initialize and return a ChatOpenAI model configured with the specified API key.
+
+    Args:
+        api_key (str): The API key for accessing OpenAI services.
+
+    Returns:
+        ChatOpenAI: A ChatOpenAI object initialized with the specified model and API key.
+    """
+    return ChatOpenAI(temperature=0.0, model="gpt-3.5-turbo", openai_api_key=api_key)
+

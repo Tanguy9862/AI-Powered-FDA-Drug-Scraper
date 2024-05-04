@@ -1,7 +1,7 @@
 import logging
 import os
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, Union
 
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -26,43 +26,59 @@ from new_drug_approvals_scraper.classification import (
 )
 
 # Initialize constants: date format, and browser headers
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 DATE_FORMAT = '%B %d, %Y'
 HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0"}
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def scrape_new_drug_approvals_data(openai_api_key: Optional[str] = None) -> None:
+def scrape_new_drug_approvals_data(
+        openai_api_key: Optional[str] = None,
+        return_df: bool = False,
+        most_recent_date: Optional[datetime] = None,
+        most_recent_drug: Optional[str] = None
+) -> Union[None, pd.DataFrame]:
     """
-    Scrapes new drug approvals data and updates the local database.
+    Scrapes new drug approvals data from Drugs.com and updates a local database or returns a DataFrame.
+    This function is designed to be versatile, suitable for standalone use or as part of a Dash application.
 
-    This function iteratively scrapes data for new drug approvals from a specified range of years,
-    classifies the drugs and diseases using a LangChain model, and updates a local CSV file with the data.
+    It checks for the existence of a local CSV file:
+    - If the file exists, the function scrapes only new data beyond the most recent records in the file.
+    - If the file does not exist, it initializes the database by scraping all available data.
+    If 'return_df' is True, instead of updating a CSV, it returns the newly scraped data as a DataFrame.
 
     Args:
         openai_api_key (Optional[str]): An OpenAI API key for using the language model. If not provided,
-                                     the function will attempt to load it from environment variables.
+                                        the function will attempt to load it from environment variables.
+        return_df (bool): If True, returns the scraped data as a DataFrame. If False, updates the local CSV file.
+        most_recent_date (Optional[datetime]): The most recent date of drug approval to use as a scraping boundary.
+        most_recent_drug (Optional[str]): The name of the most recently approved drug to check against for stopping the scrape early.
 
     Raises:
         ValueError: If the OpenAI API key is not provided and cannot be loaded from environment variables.
 
     Returns:
-        None: The function logs messages and does not return any value.
-     """
+        None or pd.DataFrame: Returns None if updating CSV or a DataFrame containing the scraped data if 'return_df' is True.
+    """
 
-    # Check for existing CSV file to determine if we need to update or initialize data
-    csv_file = 'new_drug_approvals.csv'
-    file_exists = os.path.isfile(csv_file)
+    if not return_df:
 
-    if file_exists:
-        df = pd.read_csv(csv_file)
-        df['Date of Approval'] = pd.to_datetime(df['Date of Approval'], format='%Y-%m-%d', errors='coerce')
-        df_sorted = df.sort_values(by='Date of Approval', ascending=False)
-        most_recent = df_sorted.iloc[0]
-        most_recent_date, most_recent_drug = most_recent['Date of Approval'], most_recent['drug_name']
+        # Check for existing CSV file to determine if we need to update or initialize data
+        csv_file = 'new_drug_approvals.csv'
+        file_exists = os.path.isfile(csv_file)
+
+        if file_exists:
+            df = pd.read_csv(csv_file)
+            df['Date of Approval'] = pd.to_datetime(df['Date of Approval'], format='%Y-%m-%d', errors='coerce')
+            df_sorted = df.sort_values(by='Date of Approval', ascending=False)
+            most_recent = df_sorted.iloc[0]
+            most_recent_date, most_recent_drug = most_recent['Date of Approval'], most_recent['drug_name']
     else:
-        most_recent_date, most_recent_drug = None, None
+        # Preparing to return new data as DataFrame
+        df_to_return = pd.DataFrame()
 
-    # Initialize LLM for classification
+    # Initialize the language model with API key
     if not openai_api_key:
         load_dotenv()
         openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -71,7 +87,7 @@ def scrape_new_drug_approvals_data(openai_api_key: Optional[str] = None) -> None
 
     chat = initialize_model(openai_api_key)
 
-    # Initialize current_year and end_year
+    # Scraping process initialization
     current_year, end_year = int(datetime.utcnow().year), 2002
 
     # Flag to determine when to stop scraping based on new data availability
@@ -126,6 +142,7 @@ def scrape_new_drug_approvals_data(openai_api_key: Optional[str] = None) -> None
 
                             # If the current drug and its approval date match the most recently recorded drug and date,
                             # it indicates there are no new updates to scrape, and the process should stop.
+                            print(new_data['drug_name'], date_formatted, most_recent_date)
                             if new_data['drug_name'] == most_recent_drug and date_formatted == most_recent_date:
                                 logging.info(f'{most_recent_drug} was the last drug scraped previously.\n'
                                              f'Scraping has now been completed.')
@@ -163,13 +180,22 @@ def scrape_new_drug_approvals_data(openai_api_key: Optional[str] = None) -> None
                 # Append new scraped data to the existing CSV
                 drug_df = pd.DataFrame([new_data])
                 drug_df['Date of Approval'] = pd.to_datetime(drug_df['Date of Approval'], format=DATE_FORMAT)
-                drug_df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
-                if not file_exists:
-                    file_exists = True
+
+                if not return_df:
+                    # Updates the CSV on disk with new scraped data
+                    drug_df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
+                    if not file_exists:
+                        file_exists = True
+                else:
+                    # Concatenate the newly scraped data to the dataframe being returned
+                    df_to_return = pd.concat([df_to_return, drug_df], ignore_index=True)
 
             current_year -= 1
 
         else:
             break
 
-    return logging.info('Drug Approvals Data Updated!')
+    logging.info('Drug Approvals Data Updated!')
+
+    if return_df:
+        return df_to_return

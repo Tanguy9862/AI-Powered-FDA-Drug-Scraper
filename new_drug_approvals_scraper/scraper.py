@@ -142,7 +142,6 @@ def scrape_new_drug_approvals_data(
 
                             # If the current drug and its approval date match the most recently recorded drug and date,
                             # it indicates there are no new updates to scrape, and the process should stop.
-                            print(new_data['drug_name'], date_formatted, most_recent_date)
                             if new_data['drug_name'] == most_recent_drug and date_formatted == most_recent_date:
                                 logging.info(f'{most_recent_drug} was the last drug scraped previously.\n'
                                              f'Scraping has now been completed.')

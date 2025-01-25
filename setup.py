@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='new_drug_approvals_scraper',
-    version='0.1.0',
+    version='0.1.1',
     author='SUROWIEC Tanguy',
     description='A comprehensive package for scraping and processing new drug approval data.',
     long_description=open('README.md').read(),
@@ -13,10 +13,12 @@ setup(
         'beautifulsoup4==4.12.3',
         'requests~=2.31.0',
         'tqdm~=4.66.2',
-        'pandas~=2.2.2',
         'langchain~=0.1.16',
         'openai',
-        'python-dotenv~=1.0.1',
-        'langchain-openai'
+        'pandas',
+        'python-dotenv',
+        'langchain-openai',
+        'boto3',
+        'google-cloud-storage'
     ]
 )

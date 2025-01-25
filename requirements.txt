@@ -1,8 +1,10 @@
 beautifulsoup4==4.12.3
 requests~=2.31.0
 tqdm~=4.66.2
-pandas~=2.2.2
 langchain~=0.1.16
+boto3==1.35.97
+google-cloud-storage==2.19.0
+pandas
 openai
-python-dotenv~=1.0.1
+python-dotenv
 langchain-openai

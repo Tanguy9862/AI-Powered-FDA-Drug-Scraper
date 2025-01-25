@@ -1,6 +1,10 @@
+import logging
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+
+from typing import Union
+
 
 # Configuration for drug and disease categories
 DRUG_CATEGORIES = "Antibiotics, Antivirals, Antifungals, Antiparasitics, Antineoplastics, Anti-inflammatories, " \
@@ -61,7 +65,7 @@ def setup_classification_schema(description: str) -> ResponseSchema:
     return ResponseSchema(name="item_category", description=description)
 
 
-def make_classification(categories: str, item_description: str, template: str, chat: ChatOpenAI, **kwargs) -> str:
+def make_classification(categories: str, item_description: str, template: str, chat: ChatOpenAI, **kwargs) -> Union[str, None]:
     """
     Classifies an item using LangChain model based on provided details.
 
@@ -86,6 +90,10 @@ def make_classification(categories: str, item_description: str, template: str, c
         **kwargs
     )
 
-    response = chat.invoke(messages)
-    output_dict = output_parser.parse(response.content)
-    return output_dict['item_category']
+    try:
+        response = chat.invoke(messages)
+        output_dict = output_parser.parse(response.content)
+        return output_dict['item_category']
+    except Exception as e:
+        logging.warning(f'Exception during classification: {e}')
+        return None

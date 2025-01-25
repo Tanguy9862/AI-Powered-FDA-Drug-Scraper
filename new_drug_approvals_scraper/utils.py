@@ -1,5 +1,34 @@
 import re
+import logging
+import pandas as pd
 from langchain_openai import ChatOpenAI
+from html import unescape
+from typing import Union
+from .config import CONFIG
+
+
+def get_most_recent_year(df: pd.DataFrame, date_column: str = 'Date of Approval') -> Union[int, bool]:
+    """
+    Returns the year of the most recent date in the specified column.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the data.
+        date_column (str): Name of the column with date values.
+
+    Returns:
+        Union[int, bool]: The most recent year or False if no valid dates are found.
+    """
+    try:
+        # Convert the column to datetime, handling invalid values
+        df[date_column] = pd.to_datetime(df[date_column], errors='coerce')
+        most_recent_date = df[date_column].max()
+        if pd.isna(most_recent_date):
+            logging.error(f"No valid dates found in column `{date_column}`.")
+            return False
+        return most_recent_date.year
+    except Exception as e:
+        logging.error(f"Error while processing column `{date_column}`: {e}")
+        raise ValueError(f"Failed to get the most recent year from column `{date_column}`.")
 
 
 def clean_mode_administration(mode: str) -> str:
@@ -32,7 +61,7 @@ def extract_generic_and_admin(drug_tag: str) -> tuple:
     """
 
     # Try to capture nested parentheses and then text following until tag close or end of string
-    match = re.search(r'\(((?:[^\(\)]|\([^\)]*\))*)\)\s*(.*)', drug_tag)
+    match = re.search(r'\(((?:[^\(\)]|\([^\)]*\))*)\)\s*(.*)', unescape(drug_tag))
 
     if match:
         generic_name, mode_administration = match.group(1).strip(), match.group(2).strip()
@@ -68,7 +97,7 @@ def clean_company_name(company_name: str) -> str:
 
     # List of suffixes to remove from the company name
     suffixes_to_remove = [
-        r'\.', r'\,', r'\binc\b', r'\bltd\b', r'\bglobal\b', r'\blimited\b',
+        r'\.', r'\,', r'\;', r'\binc\b', r'\bltd\b', r'\bglobal\b', r'\blimited\b',
         r'\bllc\b', r'\bcorp\b', r'\ba\/s\b', r'\bcorporation\b', r'\bs\.a\b',
         r'\bgmbh\b', r'\bag\b', r'\bplc\b', r'\band co\b', r'\band company\b',
         r'\bl\.p\b', r'& co', r'\bsa\b', r'\busa\b', r'\blp\b', r'\bus\b', r'\bincorporated\b',
@@ -100,5 +129,5 @@ def initialize_model(api_key: str) -> ChatOpenAI:
     Returns:
         ChatOpenAI: A ChatOpenAI object initialized with the specified model and API key.
     """
-    return ChatOpenAI(temperature=0.0, model="gpt-3.5-turbo", openai_api_key=api_key)
+    return ChatOpenAI(temperature=0.0, model=CONFIG.LLM_MODEL, openai_api_key=api_key)
 

@@ -27,7 +27,7 @@ class LocalConfig(BaseConfig):
 
 
 class AWSConfig(BaseConfig):
-    BUCKET_NAME = "new-drug-approvals-s3"
+    BUCKET_NAME = "app-new-drug-approvals-bucket"
 
 
 class GCPConfig(BaseConfig):

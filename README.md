@@ -1,6 +1,6 @@
 # 🔄 New Drug Approvals Scraper
 
-This Python package automates the scraping, cleaning, and classification of new drug approval data from [Drugs.com](https://www.drugs.com/newdrugs.html). Designed for robustness and versatility, it integrates data processing techniques with AI-driven classification using OpenAI's GPT-3.5 Turbo model, enabling enriched data analysis within dynamic environments like Dash applications.
+This Python package automates the scraping, cleaning, and classification of new drug approval data from [Drugs.com](https://www.drugs.com/newdrugs.html). Designed for robustness and versatility, it integrates data processing techniques with AI-driven classification using OpenAI's GPT-4o-mini, enabling enriched data analysis within dynamic environments like Dash applications.
 
 ## 🧹 Data Cleaning and Normalization
 
@@ -61,10 +61,6 @@ The scraper is structured as a Python package, enabling it to function independe
 To use the scraper, manage the OpenAI API key through one of the following methods:
 1. **Environment Variable**: Store the API key in an environment variable which the scraper accesses.
 2. **Direct Specification**: Directly pass the API key to the function when invoking it.
-
-The main function, `scrape_new_drug_approvals_data`, supports:
-- **Standalone Execution**: Updates a local CSV file with the latest drug approvals.
-- **Integration with Dash**: Returns a DataFrame directly, enabling real-time data refresh in Dash applications whenever invoked.
 
 ## 🌐 Example Integration
 
